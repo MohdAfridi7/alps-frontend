@@ -7,7 +7,7 @@ import {
   getUsersByRole,
   assignProjectToClient,
 } from "../api/apiRoute";
-import { Briefcase, Edit, Trash2, MoreVertical, Plus, X, Search, ChevronDown } from "lucide-react";
+import { Briefcase, Edit, Trash2, MoreVertical, Plus, X, Search, ChevronDown, Loader } from "lucide-react";
 
 const statusOptions = ["active", "on-hold", "completed"];
 
@@ -30,6 +30,8 @@ const ProjectSection = () => {
   });
   const [alert, setAlert] = useState(null);
   const [deleteModal, setDeleteModal] = useState({ open: false, projectId: null });
+  const [loading, setLoading] = useState(true); // State for initial data fetching
+  const [buttonLoading, setButtonLoading] = useState(false); // State for button API calls
 
   const fetchProjects = async () => {
     try {
@@ -54,7 +56,6 @@ const ProjectSection = () => {
       }
 
       setProjects(filteredProjects);
-     
       setTimeout(() => setAlert(null), 3000);
     } catch (err) {
       setAlert({ type: "error", message: err.response?.data?.msg || "Failed to load projects" });
@@ -66,7 +67,6 @@ const ProjectSection = () => {
     try {
       const res = await getUsersByRole("Client");
       setClients(res.data);
- 
       setTimeout(() => setAlert(null), 3000);
     } catch (err) {
       setAlert({ type: "error", message: err.response?.data?.msg || "Failed to load clients" });
@@ -75,6 +75,7 @@ const ProjectSection = () => {
   };
 
   const handleDelete = async () => {
+    setButtonLoading(true); // Set button loading state
     try {
       await deleteProject(deleteModal.projectId);
       await fetchProjects();
@@ -83,6 +84,8 @@ const ProjectSection = () => {
     } catch (err) {
       setAlert({ type: "error", message: err.response?.data?.msg || "Failed to delete project" });
       setTimeout(() => setAlert(null), 5000);
+    } finally {
+      setButtonLoading(false); // Reset button loading state
     }
     setDeleteModal({ open: false, projectId: null });
   };
@@ -104,6 +107,7 @@ const ProjectSection = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setButtonLoading(true); // Set button loading state
     try {
       if (editMode) {
         await updateProject(editId, formData);
@@ -120,10 +124,14 @@ const ProjectSection = () => {
     } catch (err) {
       setAlert({ type: "error", message: err.response?.data?.msg || "Operation failed" });
       setTimeout(() => setAlert(null), 5000);
+    } finally {
+      setButtonLoading(false); // Reset button loading state
     }
   };
 
   const handleSubmitAssign = async (projectId, clientId) => {
+    if (!clientId) return; // Prevent empty client selection
+    setButtonLoading(true); // Set button loading state
     try {
       await assignProjectToClient({ projectId, clientId });
       await fetchProjects();
@@ -132,17 +140,37 @@ const ProjectSection = () => {
     } catch (err) {
       setAlert({ type: "error", message: err.response?.data?.msg || "Failed to assign project" });
       setTimeout(() => setAlert(null), 5000);
+    } finally {
+      setButtonLoading(false); // Reset button loading state
     }
   };
 
   useEffect(() => {
-    fetchProjects();
-    fetchClients();
+    const fetchData = async () => {
+      setLoading(true); // Set loading state for initial fetch
+      try {
+        await Promise.all([fetchProjects(), fetchClients()]);
+      } catch (err) {
+        setAlert({ type: "error", message: "Failed to load initial data" });
+        setTimeout(() => setAlert(null), 5000);
+      } finally {
+        setLoading(false); // Reset loading state
+      }
+    };
+    fetchData();
   }, []);
 
   useEffect(() => {
-    fetchProjects();
+    fetchProjects(); // No loading state for search/filter updates
   }, [searchQuery, statusFilter]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-60">
+        <Loader className="animate-spin text-indigo-600 w-8 h-8" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -176,9 +204,17 @@ const ProjectSection = () => {
               </button>
               <button
                 onClick={handleDelete}
-                className="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 transition duration-200 flex items-center gap-2"
+                disabled={buttonLoading}
+                className={`px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 transition duration-200 flex items-center gap-2 ${
+                  buttonLoading ? "opacity-50 cursor-not-allowed" : ""
+                }`}
               >
-                <Trash2 size={18} /> Confirm
+                {buttonLoading ? (
+                  <Loader className="animate-spin w-5 h-5" />
+                ) : (
+                  <Trash2 size={18} />
+                )}
+                Confirm
               </button>
             </div>
           </div>
@@ -202,32 +238,39 @@ const ProjectSection = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
             </div>
             <div className="relative inline-block w-48">
-  <select
-    value={statusFilter}
-    onChange={(e) => setStatusFilter(e.target.value)}
-    className="w-full appearance-none px-4 pr-10 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition duration-200"
-  >
-    <option value="">All Status</option>
-    {statusOptions.map((s) => (
-      <option key={s} value={s}>
-        {s.charAt(0).toUpperCase() + s.slice(1)}
-      </option>
-    ))}
-  </select>
-  <div className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-    <ChevronDown size={18} />
-  </div>
-</div>
-
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full appearance-none px-4 pr-10 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition duration-200"
+              >
+                <option value="">All Status</option>
+                {statusOptions.map((s) => (
+                  <option key={s} value={s}>
+                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                <ChevronDown size={18} />
+              </div>
+            </div>
             <button
               onClick={() => {
                 setFormData({ title: "", description: "", status: "active", startDate: "", endDate: "", client: "" });
                 setEditMode(false);
                 setShowModal(true);
               }}
-              className="px-4 py-2 text-white bg-gradient-to-r from-indigo-600 to-blue-600 rounded-lg hover:from-indigo-700 hover:to-blue-700 transition duration-200 flex items-center gap-2 shadow-md"
+              disabled={buttonLoading}
+              className={`px-4 py-2 text-white bg-gradient-to-r from-indigo-600 to-blue-600 rounded-lg hover:from-indigo-700 hover:to-blue-700 transition duration-200 flex items-center gap-2 shadow-md ${
+                buttonLoading ? "opacity-50 cursor-not-allowed" : ""
+              }`}
             >
-              <Plus size={18} /> Add Project
+              {buttonLoading ? (
+                <Loader className="animate-spin w-5 h-5" />
+              ) : (
+                <Plus size={18} />
+              )}
+              Add Project
             </button>
           </div>
         </div>
@@ -236,7 +279,8 @@ const ProjectSection = () => {
           {projects.map((project) => (
             <div
               key={project._id}
-              className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 relative bg-gradient-to-br from-gray-50 to-whiteachs">
+              className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 relative bg-gradient-to-br from-gray-50 to-white"
+            >
               <div className="absolute top-4 right-4">
                 <div className="relative">
                   <button
@@ -297,23 +341,25 @@ const ProjectSection = () => {
                 <div className="mt-3">
                   <label className="text-sm font-medium text-gray-700">Assign to Client:</label>
                   <div className="relative mt-1">
-  <select
-    onChange={(e) => handleSubmitAssign(project._id, e.target.value)}
-    defaultValue=""
-    className="w-full px-3 py-2 pr-10 outline-none appearance-none bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
-  >
-    <option value="">-- Select Client --</option>
-    {clients.map((client) => (
-      <option key={client._id} value={client._id}>
-        {client.name} ({client.email})
-      </option>
-    ))}
-  </select>
-  <div className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-    <ChevronDown size={18} />
-  </div>
-</div>
-
+                    <select
+                      onChange={(e) => handleSubmitAssign(project._id, e.target.value)}
+                      defaultValue=""
+                      disabled={buttonLoading}
+                      className={`w-full px-3 py-2 pr-10 outline-none appearance-none bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 ${
+                        buttonLoading ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                    >
+                      <option value="">-- Select Client --</option>
+                      {clients.map((client) => (
+                        <option key={client._id} value={client._id}>
+                          {client.name} ({client.email})
+                        </option>
+                      ))}
+                    </select>
+                    <div className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                      <ChevronDown size={18} />
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -368,25 +414,25 @@ const ProjectSection = () => {
                   ></textarea>
                 </div>
                 <div>
-  <label htmlFor="status" className="block text-sm font-medium text-gray-700">
-    Status
-  </label>
-  <div className="relative mt-1">
-    <select
-      id="status"
-      value={formData.status}
-      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-      className="w-full px-4 py-3 pr-10 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none appearance-none transition duration-200"
-    >
-      <option value="active">Active</option>
-      <option value="on-hold">On Hold</option>
-      <option value="completed">Completed</option>
-    </select>
-    <div className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-      <ChevronDown size={18} />
-    </div>
-  </div>
-</div>
+                  <label htmlFor="status" className="block text-sm font-medium text-gray-700">
+                    Status
+                  </label>
+                  <div className="relative mt-1">
+                    <select
+                      id="status"
+                      value={formData.status}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                      className="w-full px-4 py-3 pr-10 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none appearance-none transition duration-200"
+                    >
+                      <option value="active">Active</option>
+                      <option value="on-hold">On Hold</option>
+                      <option value="completed">Completed</option>
+                    </select>
+                    <div className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                      <ChevronDown size={18} />
+                    </div>
+                  </div>
+                </div>
                 <div>
                   <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
                     Start Date
@@ -411,32 +457,31 @@ const ProjectSection = () => {
                     className="mt-1 w-full px-4 py-3 outline-none bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
                   />
                 </div>
-                {editMode &&
-                <div>
-  <label htmlFor="client" className="block text-sm font-medium text-gray-700">
-    Assign to Client
-  </label>
-  <div className="relative mt-1">
-    <select
-      id="client"
-      value={formData.client}
-      onChange={(e) => setFormData({ ...formData, client: e.target.value })}
-      className="w-full px-4 py-3 pr-10 outline-none appearance-none bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
-    >
-      <option value="">Select Client</option>
-      {clients.map((client) => (
-        <option key={client._id} value={client._id}>
-          {client.name} ({client.email})
-        </option>
-      ))}
-    </select>
-    <div className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-      <ChevronDown size={18} />
-    </div>
-  </div>
-</div>
-
-}
+                {editMode && (
+                  <div>
+                    <label htmlFor="client" className="block text-sm font-medium text-gray-700">
+                      Assign to Client
+                    </label>
+                    <div className="relative mt-1">
+                      <select
+                        id="client"
+                        value={formData.client}
+                        onChange={(e) => setFormData({ ...formData, client: e.target.value })}
+                        className="w-full px-4 py-3 pr-10 outline-none appearance-none bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
+                      >
+                        <option value="">Select Client</option>
+                        {clients.map((client) => (
+                          <option key={client._id} value={client._id}>
+                            {client.name} ({client.email})
+                          </option>
+                        ))}
+                      </select>
+                      <div className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                        <ChevronDown size={18} />
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <div className="flex justify-end gap-4">
                   <button
                     type="button"
@@ -447,9 +492,18 @@ const ProjectSection = () => {
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 text-white bg-gradient-to-r from-indigo-600 to-blue-600 rounded-lg hover:from-indigo-700 hover:to-blue-700 transition duration-200 flex items-center gap-2"
+                    disabled={buttonLoading}
+                    className={`px-4 py-2 text-white bg-gradient-to-r from-indigo-600 to-blue-600 rounded-lg hover:from-indigo-700 hover:to-blue-700 transition duration-200 flex items-center gap-2 ${
+                      buttonLoading ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                   >
-                    {editMode ? <Edit size={18} /> : <Plus size={18} />}
+                    {buttonLoading ? (
+                      <Loader className="animate-spin w-5 h-5" />
+                    ) : editMode ? (
+                      <Edit size={18} />
+                    ) : (
+                      <Plus size={18} />
+                    )}
                     {editMode ? "Update Project" : "Add Project"}
                   </button>
                 </div>

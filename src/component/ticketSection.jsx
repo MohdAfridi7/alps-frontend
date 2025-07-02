@@ -6,7 +6,7 @@ import {
   uploadTicketAttachment,
   getTicketById,
 } from "../api/apiRoute";
-import { Briefcase, Plus, X, Eye, FileText, ChevronDown } from "lucide-react";
+import { Briefcase, Plus, X, Eye, FileText, ChevronDown, Loader } from "lucide-react";
 
 const TicketSection = () => {
   const [projects, setProjects] = useState([]);
@@ -22,8 +22,12 @@ const TicketSection = () => {
   const [viewTicket, setViewTicket] = useState(null);
   const [viewModal, setViewModal] = useState(false);
   const [alert, setAlert] = useState(null);
+  const [loading, setLoading] = useState(true); // State for data fetching
+  const [createLoading, setCreateLoading] = useState(false); // State for create ticket action
+  const [viewLoading, setViewLoading] = useState({}); // State for view ticket action per ticket
 
   const fetchProjects = async () => {
+    setLoading(true); // Set loading state
     try {
       const res = await getAllProjects();
       setProjects(res.data);
@@ -31,10 +35,13 @@ const TicketSection = () => {
     } catch (err) {
       setAlert({ type: "error", message: err.response?.data?.msg || "Failed to load projects" });
       setTimeout(() => setAlert(null), 5000);
+    } finally {
+      setLoading(false); // Reset loading state
     }
   };
 
   const fetchTickets = async () => {
+    setLoading(true); // Set loading state
     try {
       const res = await getAllTickets();
       setTickets(res.data);
@@ -42,11 +49,14 @@ const TicketSection = () => {
     } catch (err) {
       setAlert({ type: "error", message: err.response?.data?.msg || "Failed to load tickets" });
       setTimeout(() => setAlert(null), 5000);
+    } finally {
+      setLoading(false); // Reset loading state
     }
   };
 
   const handleCreateTicket = async (e) => {
     e.preventDefault();
+    setCreateLoading(true); // Set create loading state
     try {
       const payload = { ...ticketForm, project: activeProject._id };
       const res = await createTicket(payload);
@@ -68,10 +78,13 @@ const TicketSection = () => {
     } catch (err) {
       setAlert({ type: "error", message: err.response?.data?.msg || "Failed to create ticket" });
       setTimeout(() => setAlert(null), 5000);
+    } finally {
+      setCreateLoading(false); // Reset create loading state
     }
   };
 
   const handleViewTicket = async (ticketId) => {
+    setViewLoading((prev) => ({ ...prev, [ticketId]: true })); // Set view loading for specific ticket
     try {
       const res = await getTicketById(ticketId);
       setViewTicket(res.data);
@@ -80,13 +93,33 @@ const TicketSection = () => {
     } catch (err) {
       setAlert({ type: "error", message: err.response?.data?.msg || "Failed to load ticket details" });
       setTimeout(() => setAlert(null), 5000);
+    } finally {
+      setViewLoading((prev) => ({ ...prev, [ticketId]: false })); // Reset view loading for specific ticket
     }
   };
 
   useEffect(() => {
-    fetchProjects();
-    fetchTickets();
+    const fetchData = async () => {
+      setLoading(true); // Set loading state for initial fetch
+      try {
+        await Promise.all([fetchProjects(), fetchTickets()]);
+      } catch (err) {
+        setAlert({ type: "error", message: "Failed to load initial data" });
+        setTimeout(() => setAlert(null), 5000);
+      } finally {
+        setLoading(false); // Reset loading state
+      }
+    };
+    fetchData();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-60">
+        <Loader className="animate-spin text-indigo-600 w-8 h-8" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -130,9 +163,17 @@ const TicketSection = () => {
                   {existingTicket ? (
                     <button
                       onClick={() => handleViewTicket(existingTicket._id)}
-                      className="mt-4 px-4 py-2 text-white bg-gradient-to-r from-green-600 to-green-500 rounded-lg hover:from-green-700 hover:to-green-600 transition duration-200 flex items-center gap-2 shadow-md"
+                      disabled={viewLoading[existingTicket._id]}
+                      className={`mt-4 px-4 py-2 text-white bg-gradient-to-r from-green-600 to-green-500 rounded-lg hover:from-green-700 hover:to-green-600 transition duration-200 flex items-center gap-2 shadow-md ${
+                        viewLoading[existingTicket._id] ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
                     >
-                      <Eye size={18} /> View Ticket
+                      {viewLoading[existingTicket._id] ? (
+                        <Loader className="animate-spin w-5 h-5" />
+                      ) : (
+                        <Eye size={18} />
+                      )}
+                      View Ticket
                     </button>
                   ) : (
                     <button
@@ -140,9 +181,17 @@ const TicketSection = () => {
                         setActiveProject(proj);
                         setShowModal(true);
                       }}
-                      className="mt-4 px-4 py-2 text-white bg-gradient-to-r from-indigo-600 to-blue-600 rounded-lg hover:from-indigo-700 hover:to-blue-700 transition duration-200 flex items-center gap-2 shadow-md"
+                      disabled={createLoading}
+                      className={`mt-4 px-4 py-2 text-white bg-gradient-to-r from-indigo-600 to-blue-600 rounded-lg hover:from-indigo-700 hover:to-blue-700 transition duration-200 flex items-center gap-2 shadow-md ${
+                        createLoading ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
                     >
-                      <Plus size={18} /> Create Ticket
+                      {createLoading ? (
+                        <Loader className="animate-spin w-5 h-5" />
+                      ) : (
+                        <Plus size={18} />
+                      )}
+                      Create Ticket
                     </button>
                   )}
                 </div>
@@ -190,26 +239,25 @@ const TicketSection = () => {
                   ></textarea>
                 </div>
                 <div>
-  <label htmlFor="priority" className="block text-sm font-medium text-gray-700">
-    Priority
-  </label>
-  <div className="relative mt-1">
-    <select
-      id="priority"
-      value={ticketForm.priority}
-      onChange={(e) => setTicketForm({ ...ticketForm, priority: e.target.value })}
-      className="w-full px-4 py-3 pr-10 bg-gray-50 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition duration-200"
-    >
-      <option value="low">Low</option>
-      <option value="medium">Medium</option>
-      <option value="high">High</option>
-    </select>
-    <div className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-      <ChevronDown size={18} />
-    </div>
-  </div>
-</div>
-
+                  <label htmlFor="priority" className="block text-sm font-medium text-gray-700">
+                    Priority
+                  </label>
+                  <div className="relative mt-1">
+                    <select
+                      id="priority"
+                      value={ticketForm.priority}
+                      onChange={(e) => setTicketForm({ ...ticketForm, priority: e.target.value })}
+                      className="w-full px-4 py-3 pr-10 bg-gray-50 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition duration-200"
+                    >
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                    </select>
+                    <div className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                      <ChevronDown size={18} />
+                    </div>
+                  </div>
+                </div>
                 <div>
                   <label htmlFor="attachment" className="block text-sm font-medium text-gray-700">
                     Attachment (optional)
@@ -232,9 +280,17 @@ const TicketSection = () => {
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 text-white bg-gradient-to-r from-indigo-600 to-blue-600 rounded-lg hover:from-indigo-700 hover:to-blue-700 transition duration-200 flex items-center gap-2"
+                    disabled={createLoading}
+                    className={`px-4 py-2 text-white bg-gradient-to-r from-indigo-600 to-blue-600 rounded-lg hover:from-indigo-700 hover:to-blue-700 transition duration-200 flex items-center gap-2 ${
+                      createLoading ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                   >
-                    <Plus size={18} /> Create Ticket
+                    {createLoading ? (
+                      <Loader className="animate-spin w-5 h-5" />
+                    ) : (
+                      <Plus size={18} />
+                    )}
+                    Create Ticket
                   </button>
                 </div>
               </form>

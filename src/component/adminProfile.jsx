@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { getUserById, updateUser, changePassword } from "../api/apiRoute";
-import { User, Edit, Lock, X } from "lucide-react";
+import { User, Edit, Lock, X, Loader } from "lucide-react";
 
 const AdminProfile = () => {
   const [admin, setAdmin] = useState(null);
@@ -9,10 +9,14 @@ const AdminProfile = () => {
   const [formData, setFormData] = useState({ name: "", email: "", phone: "" });
   const [newPassword, setNewPassword] = useState("");
   const [alert, setAlert] = useState(null);
+  const [loading, setLoading] = useState(true); // State for data fetching
+  const [profileLoading, setProfileLoading] = useState(false); // State for profile update action
+  const [passwordLoading, setPasswordLoading] = useState(false); // State for password change action
 
   const adminId = JSON.parse(atob(localStorage.getItem("admToken").split(".")[1])).id;
 
   const fetchAdmin = async () => {
+    setLoading(true); // Set loading state
     try {
       const res = await getUserById(adminId);
       setAdmin(res.data);
@@ -25,11 +29,14 @@ const AdminProfile = () => {
     } catch (err) {
       setAlert({ type: "error", message: err.response?.data?.msg || "Failed to load profile" });
       setTimeout(() => setAlert(null), 5000);
+    } finally {
+      setLoading(false); // Reset loading state
     }
   };
 
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
+    setProfileLoading(true); // Set profile loading state
     try {
       await updateUser(adminId, formData);
       setEditMode(false);
@@ -39,10 +46,13 @@ const AdminProfile = () => {
     } catch (err) {
       setAlert({ type: "error", message: err.response?.data?.msg || "Failed to update profile" });
       setTimeout(() => setAlert(null), 5000);
+    } finally {
+      setProfileLoading(false); // Reset profile loading state
     }
   };
 
   const handlePasswordUpdate = async () => {
+    setPasswordLoading(true); // Set password loading state
     try {
       await changePassword(adminId, newPassword);
       setNewPassword("");
@@ -52,12 +62,22 @@ const AdminProfile = () => {
     } catch (err) {
       setAlert({ type: "error", message: err.response?.data?.msg || "Failed to update password" });
       setTimeout(() => setAlert(null), 5000);
+    } finally {
+      setPasswordLoading(false); // Reset password loading state
     }
   };
 
   useEffect(() => {
     fetchAdmin();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-60">
+        <Loader className="animate-spin text-indigo-600 w-8 h-8" />
+      </div>
+    );
+  }
 
   if (!admin) return <div className="text-center text-gray-600 text-lg">Loading...</div>;
 
@@ -175,9 +195,17 @@ const AdminProfile = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-white bg-gradient-to-r from-indigo-600 to-blue-600 rounded-lg hover:from-indigo-700 hover:to-blue-700 transition duration-200 flex items-center gap-2"
+                  disabled={profileLoading}
+                  className={`px-4 py-2 text-white bg-gradient-to-r from-indigo-600 to-blue-600 rounded-lg hover:from-indigo-700 hover:to-blue-700 transition duration-200 flex items-center gap-2 ${
+                    profileLoading ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                 >
-                  <Edit size={18} /> Save Changes
+                  {profileLoading ? (
+                    <Loader className="animate-spin w-5 h-5" />
+                  ) : (
+                    <Edit size={18} />
+                  )}
+                  Save Changes
                 </button>
               </div>
             </form>
@@ -221,9 +249,17 @@ const AdminProfile = () => {
               </button>
               <button
                 onClick={handlePasswordUpdate}
-                className="px-4 py-2 text-white bg-gradient-to-r from-green-600 to-green-500 rounded-lg hover:from-green-700 hover:to-green-600 transition duration-200 flex items-center gap-2"
+                disabled={passwordLoading}
+                className={`px-4 py-2 text-white bg-gradient-to-r from-green-600 to-green-500 rounded-lg hover:from-green-700 hover:to-green-600 transition duration-200 flex items-center gap-2 ${
+                  passwordLoading ? "opacity-50 cursor-not-allowed" : ""
+                }`}
               >
-                <Lock size={18} /> Change Password
+                {passwordLoading ? (
+                  <Loader className="animate-spin w-5 h-5" />
+                ) : (
+                  <Lock size={18} />
+                )}
+                Change Password
               </button>
             </div>
           </div>

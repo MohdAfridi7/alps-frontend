@@ -18,6 +18,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import { Loader } from "lucide-react";
 
 const COLORS = ["#4ade80", "#facc15", "#f87171", "#60a5fa"];
 
@@ -28,9 +29,11 @@ const Home = () => {
   const [projectStatus, setProjectStatus] = useState(null);
   const [ticketPriority, setTicketPriority] = useState(null);
   const [alert, setAlert] = useState(null);
+  const [loading, setLoading] = useState(true); // State for data fetching loading
 
   useEffect(() => {
     const fetchDashboard = async () => {
+      setLoading(true); // Set loading state
       try {
         const s = await getDashboardStats();
         const t = await getTicketsLast7Days();
@@ -51,10 +54,20 @@ const Home = () => {
       } catch (err) {
         setAlert({ type: "error", message: "Failed to load dashboard data" });
         setTimeout(() => setAlert(null), 5000);
+      } finally {
+        setLoading(false); // Reset loading state
       }
     };
     fetchDashboard();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-60">
+        <Loader className="animate-spin text-indigo-600 w-8 h-8" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">

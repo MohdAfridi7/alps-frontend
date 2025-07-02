@@ -6,7 +6,7 @@ import {
   updateTicketStatus,
   addComment,
 } from "../api/apiRoute";
-import { Briefcase, X, Eye, Edit, FileText } from "lucide-react";
+import { Briefcase, X, Eye, Edit, FileText, Loader } from "lucide-react";
 
 const MyProjects = () => {
   const [projects, setProjects] = useState([]);
@@ -15,10 +15,13 @@ const MyProjects = () => {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [editModal, setEditModal] = useState(false);
   const [newComment, setNewComment] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [buttonLoading, setButtonLoading] = useState(false); // State for Save Changes button loading
   const [newStatus, setNewStatus] = useState("open");
   const [alert, setAlert] = useState(null);
 
   const fetchData = async () => {
+    setLoading(true);
     try {
       const projectRes = await getClientProjects();
       const ticketRes = await getMyTickets();
@@ -29,10 +32,13 @@ const MyProjects = () => {
     } catch (err) {
       setAlert({ type: "error", message: err.response?.data?.msg || "Failed to load projects and tickets" });
       setTimeout(() => setAlert(null), 5000);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleViewTicket = async (id) => {
+    setLoading(true);
     try {
       const res = await getTicketById(id);
       setSelectedTicket(res.data);
@@ -42,10 +48,13 @@ const MyProjects = () => {
     } catch (err) {
       setAlert({ type: "error", message: err.response?.data?.msg || "Failed to load ticket details" });
       setTimeout(() => setAlert(null), 5000);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleUpdateTicket = async () => {
+    setButtonLoading(true); // Set button loading state
     try {
       if (newComment) {
         await addComment(selectedTicket._id, newComment);
@@ -62,12 +71,22 @@ const MyProjects = () => {
     } catch (err) {
       setAlert({ type: "error", message: err.response?.data?.msg || "Failed to update ticket" });
       setTimeout(() => setAlert(null), 5000);
+    } finally {
+      setButtonLoading(false); // Reset button loading state
     }
   };
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-60">
+        <Loader className="animate-spin text-indigo-600 w-8 h-8" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -239,9 +258,17 @@ const MyProjects = () => {
                   </button>
                   <button
                     onClick={handleUpdateTicket}
-                    className="px-4 py-2 text-white bg-gradient-to-r from-indigo-600 to-blue-600 rounded-lg hover:from-indigo-700 hover:to-blue-700 transition duration-200 flex items-center gap-2"
+                    disabled={buttonLoading}
+                    className={`px-4 py-2 text-white bg-gradient-to-r from-indigo-600 to-blue-600 rounded-lg hover:from-indigo-700 hover:to-blue-700 transition duration-200 flex items-center gap-2 ${
+                      buttonLoading ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                   >
-                    <Edit size={18} /> Save Changes
+                    {buttonLoading ? (
+                      <Loader className="animate-spin w-5 h-5" />
+                    ) : (
+                      <Edit size={18} />
+                    )}
+                    Save Changes
                   </button>
                 </div>
               </div>

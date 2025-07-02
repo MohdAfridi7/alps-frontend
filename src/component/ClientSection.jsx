@@ -1,260 +1,3 @@
-// // ✨ ClientSection.jsx
-// import React, { useEffect, useState } from "react";
-// import {
-//   getUsersByRole,
-//   getUserById,
-//   updateUser,
-//   deleteUser,
-//   postRegister,
-//   changePassword
-// } from "../api/apiRoute";
-// import { MoreVertical, X, Lock } from "lucide-react";
-
-// const ClientSection = () => {
-//   const [clients, setClients] = useState([]);
-//   const [showMenu, setShowMenu] = useState(null);
-//   const [showModal, setShowModal] = useState(false);
-//   const [showPasswordModal, setShowPasswordModal] = useState(false);
-//   const [editMode, setEditMode] = useState(false);
-//   const [formData, setFormData] = useState({ name: "", email: "", phone: "", password: "" });
-//   const [editId, setEditId] = useState(null);
-//   const [passwordUserId, setPasswordUserId] = useState(null);
-//   const [newPassword, setNewPassword] = useState("");
-
-//   const fetchClients = async () => {
-//     try {
-//       const res = await getUsersByRole("Client");
-//       setClients(res.data);
-//     } catch (err) {
-//       console.error("Error fetching clients:", err);
-//     }
-//   };
-
-//   const handleDelete = async (id) => {
-//     if (!window.confirm("Are you sure you want to delete this client?")) return;
-//     try {
-//       await deleteUser(id);
-//       fetchClients();
-//     } catch (err) {
-//       console.error("Delete error:", err);
-//     }
-//   };
-
-//   const handleEdit = async (id) => {
-//     try {
-//       const res = await getUserById(id);
-//       setFormData({
-//         name: res.data.name,
-//         email: res.data.email,
-//         phone: res.data.phone || "",
-//         password: "",
-//       });
-//       setEditId(id);
-//       setEditMode(true);
-//       setShowModal(true);
-//     } catch (err) {
-//       console.error("Edit fetch error:", err);
-//     }
-//   };
-
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-//     try {
-//       if (editMode) {
-//         await updateUser(editId, formData);
-//       } else {
-//         await postRegister({ ...formData, role: "Client" });
-//       }
-//       setShowModal(false);
-//       setFormData({ name: "", email: "", phone: "", password: "" });
-//       setEditMode(false);
-//       setEditId(null);
-//       fetchClients();
-//     } catch (err) {
-//       console.error("Submit error:", err);
-//     }
-//   };
-
-//   const handlePasswordChange = async () => {
-//     try {
-//       await changePassword(passwordUserId, newPassword);
-
-//       setShowPasswordModal(false);
-//       setNewPassword("");
-//       setPasswordUserId(null);
-//     } catch (err) {
-//       console.error("Password change error:", err);
-//     }
-//   };
-
-//   useEffect(() => {
-//     fetchClients();
-//   }, []);
-
-//   return (
-//     <div>
-//       <div className="flex justify-between items-center mb-4">
-//         <h2 className="text-xl font-semibold text-gray-800">All Clients</h2>
-//         <button
-//           onClick={() => {
-//             setFormData({ name: "", email: "", phone: "", password: "" });
-//             setEditMode(false);
-//             setShowModal(true);
-//           }}
-//           className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-//         >
-//           + Add Client
-//         </button>
-//       </div>
-
-//       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-//         {clients.map((client) => (
-//           <div
-//             key={client._id}
-//             className="bg-white shadow rounded-lg p-4 relative hover:shadow-md transition"
-//           >
-//             <div className="absolute top-3 right-3">
-//               <div className="relative">
-//                 <button onClick={() => setShowMenu(showMenu === client._id ? null : client._id)}>
-//                   <MoreVertical size={18} />
-//                 </button>
-//                 {showMenu === client._id && (
-//                   <div className="absolute right-0 mt-2 w-40 bg-white border rounded shadow z-10">
-//                     <button
-//                       onClick={() => {
-//                         setShowMenu(null);
-//                         handleEdit(client._id);
-//                       }}
-//                       className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-//                     >
-//                       Edit
-//                     </button>
-//                     <button
-//                       onClick={() => {
-//                         setShowMenu(null);
-//                         handleDelete(client._id);
-//                       }}
-//                       className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100"
-//                     >
-//                       Delete
-//                     </button>
-//                     <button
-//                       onClick={() => {
-//                         setShowMenu(null);
-//                         setPasswordUserId(client._id);
-//                         setShowPasswordModal(true);
-//                       }}
-//                       className="block w-full px-4 py-2 text-left text-sm text-blue-600 hover:bg-gray-100"
-//                     >
-//                       Update Password
-//                     </button>
-//                   </div>
-//                 )}
-//               </div>
-//             </div>
-
-//             <h3 className="text-lg font-bold text-gray-800">{client.name}</h3>
-//             <p className="text-sm text-gray-600">📧 {client.email}</p>
-//             <p className="text-sm text-gray-600">📞 {client.phone}</p>
-//           </div>
-//         ))}
-//       </div>
-
-//       {/* Modal */}
-//       {showModal && (
-//         <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex justify-center items-center z-50">
-//           <div className="bg-white p-6 rounded-md shadow-md w-[90%] max-w-md relative">
-//             <button
-//               onClick={() => setShowModal(false)}
-//               className="absolute top-2 right-2 text-gray-500 hover:text-red-600"
-//             >
-//               <X />
-//             </button>
-//             <h2 className="text-lg font-semibold mb-4">
-//               {editMode ? "Update Client" : "Add New Client"}
-//             </h2>
-//             <form onSubmit={handleSubmit} className="space-y-4">
-//               <input
-//                 type="text"
-//                 placeholder="Name"
-//                 value={formData.name}
-//                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-//                 required
-//                 className="w-full border px-3 py-2 rounded"
-//               />
-//               <input
-//                 type="email"
-//                 placeholder="Email"
-//                 value={formData.email}
-//                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-//                 required
-//                 className="w-full border px-3 py-2 rounded"
-//               />
-//               <input
-//                 type="text"
-//                 placeholder="Phone"
-//                 value={formData.phone}
-//                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-//                 className="w-full border px-3 py-2 rounded"
-//               />
-//               {!editMode && (
-//                 <input
-//                   type="password"
-//                   placeholder="Password"
-//                   value={formData.password}
-//                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-//                   required
-//                   className="w-full border px-3 py-2 rounded"
-//                 />
-//               )}
-//               <button
-//                 type="submit"
-//                 className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-//               >
-//                 {editMode ? "Update" : "Add Client"}
-//               </button>
-//             </form>
-//           </div>
-//         </div>
-//       )}
-
-//       {/* Password Modal */}
-//       {showPasswordModal && (
-//         <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex justify-center items-center z-50">
-//           <div className="bg-white p-6 rounded-md shadow-md w-[90%] max-w-md relative">
-//             <button
-//               onClick={() => setShowPasswordModal(false)}
-//               className="absolute top-2 right-2 text-gray-500 hover:text-red-600"
-//             >
-//               <X />
-//             </button>
-//             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-//               <Lock size={18} /> Update Password
-//             </h2>
-//             <input
-//               type="password"
-//               placeholder="New Password"
-//               value={newPassword}
-//               onChange={(e) => setNewPassword(e.target.value)}
-//               className="w-full border px-3 py-2 rounded mb-4"
-//             />
-//             <button
-//               onClick={handlePasswordChange}
-//               className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-//             >
-//               Update Password
-//             </button>
-//           </div>
-//         </div>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default ClientSection;
-
-
-
 import React, { useEffect, useState } from "react";
 import {
   getUsersByRole,
@@ -264,7 +7,7 @@ import {
   postRegister,
   changePassword,
 } from "../api/apiRoute";
-import { User, Edit, Trash2, MoreVertical, Plus, X, Lock } from "lucide-react";
+import { User, Edit, Trash2, MoreVertical, Plus, X, Lock, Loader } from "lucide-react";
 
 const ClientSection = () => {
   const [clients, setClients] = useState([]);
@@ -278,20 +21,25 @@ const ClientSection = () => {
   const [newPassword, setNewPassword] = useState("");
   const [alert, setAlert] = useState(null);
   const [deleteModal, setDeleteModal] = useState({ open: false, clientId: null });
+  const [loading, setLoading] = useState(true); // State for data fetching
+  const [buttonLoading, setButtonLoading] = useState(false); // State for button API calls
 
   const fetchClients = async () => {
+    setLoading(true); // Set loading state
     try {
       const res = await getUsersByRole("Client");
       setClients(res.data);
- 
       setTimeout(() => setAlert(null), 3000);
     } catch (err) {
       setAlert({ type: "error", message: err.response?.data?.msg || "Failed to load clients" });
       setTimeout(() => setAlert(null), 5000);
+    } finally {
+      setLoading(false); // Reset loading state
     }
   };
 
   const handleDelete = async () => {
+    setButtonLoading(true); // Set button loading state
     try {
       await deleteUser(deleteModal.clientId);
       await fetchClients();
@@ -300,11 +48,14 @@ const ClientSection = () => {
     } catch (err) {
       setAlert({ type: "error", message: err.response?.data?.msg || "Failed to delete client" });
       setTimeout(() => setAlert(null), 5000);
+    } finally {
+      setButtonLoading(false); // Reset button loading state
     }
     setDeleteModal({ open: false, clientId: null });
   };
 
   const handleEdit = async (id) => {
+    setLoading(true); // Set loading state
     try {
       const res = await getUserById(id);
       setFormData({
@@ -320,11 +71,14 @@ const ClientSection = () => {
     } catch (err) {
       setAlert({ type: "error", message: err.response?.data?.msg || "Failed to fetch client data" });
       setTimeout(() => setAlert(null), 5000);
+    } finally {
+      setLoading(false); // Reset loading state
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setButtonLoading(true); // Set button loading state
     try {
       if (editMode) {
         await updateUser(editId, formData);
@@ -342,10 +96,13 @@ const ClientSection = () => {
     } catch (err) {
       setAlert({ type: "error", message: err.response?.data?.msg || "Operation failed" });
       setTimeout(() => setAlert(null), 5000);
+    } finally {
+      setButtonLoading(false); // Reset button loading state
     }
   };
 
   const handlePasswordChange = async () => {
+    setButtonLoading(true); // Set button loading state
     try {
       await changePassword(passwordUserId, newPassword);
       setShowPasswordModal(false);
@@ -357,12 +114,22 @@ const ClientSection = () => {
     } catch (err) {
       setAlert({ type: "error", message: err.response?.data?.msg || "Failed to update password" });
       setTimeout(() => setAlert(null), 5000);
+    } finally {
+      setButtonLoading(false); // Reset button loading state
     }
   };
 
   useEffect(() => {
     fetchClients();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-60">
+        <Loader className="animate-spin text-indigo-600 w-8 h-8" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -396,9 +163,17 @@ const ClientSection = () => {
               </button>
               <button
                 onClick={handleDelete}
-                className="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 transition duration-200 flex items-center gap-2"
+                disabled={buttonLoading}
+                className={`px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 transition duration-200 flex items-center gap-2 ${
+                  buttonLoading ? "opacity-50 cursor-not-allowed" : ""
+                }`}
               >
-                <Trash2 size={18} /> Confirm
+                {buttonLoading ? (
+                  <Loader className="animate-spin w-5 h-5" />
+                ) : (
+                  <Trash2 size={18} />
+                )}
+                Confirm
               </button>
             </div>
           </div>
@@ -416,9 +191,17 @@ const ClientSection = () => {
               setEditMode(false);
               setShowModal(true);
             }}
-            className="px-4 py-2 text-white bg-gradient-to-r from-indigo-600 to-blue-600 rounded-lg hover:from-indigo-700 hover:to-blue-700 transition duration-200 flex items-center gap-2 shadow-md"
+            disabled={buttonLoading}
+            className={`px-4 py-2 text-white bg-gradient-to-r from-indigo-600 to-blue-600 rounded-lg hover:from-indigo-700 hover:to-blue-700 transition duration-200 flex items-center gap-2 shadow-md ${
+              buttonLoading ? "opacity-50 cursor-not-allowed" : ""
+            }`}
           >
-            <Plus size={18} /> Add Client
+            {buttonLoading ? (
+              <Loader className="animate-spin w-5 h-5" />
+            ) : (
+              <Plus size={18} />
+            )}
+            Add Client
           </button>
         </div>
 
@@ -563,7 +346,7 @@ const ClientSection = () => {
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       required
-                      className="mt-1 w-full px-4 py-3 outline-none bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
+                      className="mt-1 w-full px-4 py-3 outline-none bg-gray-50 border border-gray-300 rounded159 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
                       placeholder="Enter password"
                     />
                   </div>
@@ -578,9 +361,18 @@ const ClientSection = () => {
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 text-white bg-gradient-to-r from-indigo-600 to-blue-600 rounded-lg hover:from-indigo-700 hover:to-blue-700 transition duration-200 flex items-center gap-2"
+                    disabled={buttonLoading}
+                    className={`px-4 py-2 text-white bg-gradient-to-r from-indigo-600 to-blue-600 rounded-lg hover:from-indigo-700 hover:to-blue-700 transition duration-200 flex items-center gap-2 ${
+                      buttonLoading ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                   >
-                    {editMode ? <Edit size={18} /> : <Plus size={18} />}
+                    {buttonLoading ? (
+                      <Loader className="animate-spin w-5 h-5" />
+                    ) : editMode ? (
+                      <Edit size={18} />
+                    ) : (
+                      <Plus size={18} />
+                    )}
                     {editMode ? "Update Client" : "Add Client"}
                   </button>
                 </div>
@@ -612,7 +404,7 @@ const ClientSection = () => {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
-                  className="mt-1 w-full outline-none px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
+                  className="mt-8 w-full outline-none px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
                   placeholder="Enter new password"
                 />
               </div>
@@ -625,9 +417,17 @@ const ClientSection = () => {
                 </button>
                 <button
                   onClick={handlePasswordChange}
-                  className="px-4 py-2 text-white bg-gradient-to-r from-indigo-600 to-blue-600 rounded-lg hover:from-indigo-700 hover:to-blue-700 transition duration-200 flex items-center gap-2"
+                  disabled={buttonLoading}
+                  className={`px-4 py-2 text-white bg-gradient-to-r from-indigo-600 to-blue-600 rounded-lg hover:from-indigo-700 hover:to-blue-700 transition duration-200 flex items-center gap-2 ${
+                    buttonLoading ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                 >
-                  <Lock size={18} /> Update Password
+                  {buttonLoading ? (
+                    <Loader className="animate-spin w-5 h-5" />
+                  ) : (
+                    <Lock size={18} />
+                  )}
+                  Update Password
                 </button>
               </div>
             </div>

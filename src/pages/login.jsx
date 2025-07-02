@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { postLogin, setAuthToken } from "../api/apiRoute";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader } from "lucide-react";
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [alert, setAlert] = useState(null);
+  const [buttonLoading, setButtonLoading] = useState(false); // State for Login button loading
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -15,6 +16,7 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setButtonLoading(true); // Set button loading state
     try {
       const res = await postLogin(formData);
 
@@ -36,6 +38,8 @@ const LoginPage = () => {
     } catch (err) {
       setAlert({ type: "error", message: err.response?.data?.msg || "Login failed" });
       setTimeout(() => setAlert(null), 5000);
+    } finally {
+      setButtonLoading(false); // Reset button loading state
     }
   };
 
@@ -54,9 +58,13 @@ const LoginPage = () => {
       )}
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 transform transition-all hover:shadow-2xl">
         <div className="text-center mb-8">
-           <div className="p-4 border-b flex justify-center items-center h-16">
-    <img src="https://www.cscs.ch/fileadmin/_processed_/b/b/csm_Alps_ALPS_Logo_ec2a1ca998.jpg" alt="Company Logo" className="h-[50px]" />
-  </div>
+          <div className="p-4 border-b flex justify-center items-center h-16">
+            <img
+              src="https://www.cscs.ch/fileadmin/_processed_/b/b/csm_Alps_ALPS_Logo_ec2a1ca998.jpg"
+              alt="Company Logo"
+              className="h-[50px]"
+            />
+          </div>
           <p className="mt-2 text-sm text-gray-500">Login Admin and Client Both</p>
         </div>
 
@@ -104,9 +112,16 @@ const LoginPage = () => {
 
           <button
             type="submit"
-            className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition duration-200"
+            disabled={buttonLoading}
+            className={`w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition duration-200 flex justify-center items-center gap-2 ${
+              buttonLoading ? "opacity-50 cursor-not-allowed" : ""
+            }`}
           >
-            Login
+            {buttonLoading ? (
+              <Loader className="animate-spin w-5 h-5" />
+            ) : (
+              "Login"
+            )}
           </button>
         </form>
       </div>
