@@ -1,0 +1,641 @@
+// // ✨ ClientSection.jsx
+// import React, { useEffect, useState } from "react";
+// import {
+//   getUsersByRole,
+//   getUserById,
+//   updateUser,
+//   deleteUser,
+//   postRegister,
+//   changePassword
+// } from "../api/apiRoute";
+// import { MoreVertical, X, Lock } from "lucide-react";
+
+// const ClientSection = () => {
+//   const [clients, setClients] = useState([]);
+//   const [showMenu, setShowMenu] = useState(null);
+//   const [showModal, setShowModal] = useState(false);
+//   const [showPasswordModal, setShowPasswordModal] = useState(false);
+//   const [editMode, setEditMode] = useState(false);
+//   const [formData, setFormData] = useState({ name: "", email: "", phone: "", password: "" });
+//   const [editId, setEditId] = useState(null);
+//   const [passwordUserId, setPasswordUserId] = useState(null);
+//   const [newPassword, setNewPassword] = useState("");
+
+//   const fetchClients = async () => {
+//     try {
+//       const res = await getUsersByRole("Client");
+//       setClients(res.data);
+//     } catch (err) {
+//       console.error("Error fetching clients:", err);
+//     }
+//   };
+
+//   const handleDelete = async (id) => {
+//     if (!window.confirm("Are you sure you want to delete this client?")) return;
+//     try {
+//       await deleteUser(id);
+//       fetchClients();
+//     } catch (err) {
+//       console.error("Delete error:", err);
+//     }
+//   };
+
+//   const handleEdit = async (id) => {
+//     try {
+//       const res = await getUserById(id);
+//       setFormData({
+//         name: res.data.name,
+//         email: res.data.email,
+//         phone: res.data.phone || "",
+//         password: "",
+//       });
+//       setEditId(id);
+//       setEditMode(true);
+//       setShowModal(true);
+//     } catch (err) {
+//       console.error("Edit fetch error:", err);
+//     }
+//   };
+
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
+//     try {
+//       if (editMode) {
+//         await updateUser(editId, formData);
+//       } else {
+//         await postRegister({ ...formData, role: "Client" });
+//       }
+//       setShowModal(false);
+//       setFormData({ name: "", email: "", phone: "", password: "" });
+//       setEditMode(false);
+//       setEditId(null);
+//       fetchClients();
+//     } catch (err) {
+//       console.error("Submit error:", err);
+//     }
+//   };
+
+//   const handlePasswordChange = async () => {
+//     try {
+//       await changePassword(passwordUserId, newPassword);
+
+//       setShowPasswordModal(false);
+//       setNewPassword("");
+//       setPasswordUserId(null);
+//     } catch (err) {
+//       console.error("Password change error:", err);
+//     }
+//   };
+
+//   useEffect(() => {
+//     fetchClients();
+//   }, []);
+
+//   return (
+//     <div>
+//       <div className="flex justify-between items-center mb-4">
+//         <h2 className="text-xl font-semibold text-gray-800">All Clients</h2>
+//         <button
+//           onClick={() => {
+//             setFormData({ name: "", email: "", phone: "", password: "" });
+//             setEditMode(false);
+//             setShowModal(true);
+//           }}
+//           className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+//         >
+//           + Add Client
+//         </button>
+//       </div>
+
+//       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+//         {clients.map((client) => (
+//           <div
+//             key={client._id}
+//             className="bg-white shadow rounded-lg p-4 relative hover:shadow-md transition"
+//           >
+//             <div className="absolute top-3 right-3">
+//               <div className="relative">
+//                 <button onClick={() => setShowMenu(showMenu === client._id ? null : client._id)}>
+//                   <MoreVertical size={18} />
+//                 </button>
+//                 {showMenu === client._id && (
+//                   <div className="absolute right-0 mt-2 w-40 bg-white border rounded shadow z-10">
+//                     <button
+//                       onClick={() => {
+//                         setShowMenu(null);
+//                         handleEdit(client._id);
+//                       }}
+//                       className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+//                     >
+//                       Edit
+//                     </button>
+//                     <button
+//                       onClick={() => {
+//                         setShowMenu(null);
+//                         handleDelete(client._id);
+//                       }}
+//                       className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100"
+//                     >
+//                       Delete
+//                     </button>
+//                     <button
+//                       onClick={() => {
+//                         setShowMenu(null);
+//                         setPasswordUserId(client._id);
+//                         setShowPasswordModal(true);
+//                       }}
+//                       className="block w-full px-4 py-2 text-left text-sm text-blue-600 hover:bg-gray-100"
+//                     >
+//                       Update Password
+//                     </button>
+//                   </div>
+//                 )}
+//               </div>
+//             </div>
+
+//             <h3 className="text-lg font-bold text-gray-800">{client.name}</h3>
+//             <p className="text-sm text-gray-600">📧 {client.email}</p>
+//             <p className="text-sm text-gray-600">📞 {client.phone}</p>
+//           </div>
+//         ))}
+//       </div>
+
+//       {/* Modal */}
+//       {showModal && (
+//         <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex justify-center items-center z-50">
+//           <div className="bg-white p-6 rounded-md shadow-md w-[90%] max-w-md relative">
+//             <button
+//               onClick={() => setShowModal(false)}
+//               className="absolute top-2 right-2 text-gray-500 hover:text-red-600"
+//             >
+//               <X />
+//             </button>
+//             <h2 className="text-lg font-semibold mb-4">
+//               {editMode ? "Update Client" : "Add New Client"}
+//             </h2>
+//             <form onSubmit={handleSubmit} className="space-y-4">
+//               <input
+//                 type="text"
+//                 placeholder="Name"
+//                 value={formData.name}
+//                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+//                 required
+//                 className="w-full border px-3 py-2 rounded"
+//               />
+//               <input
+//                 type="email"
+//                 placeholder="Email"
+//                 value={formData.email}
+//                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+//                 required
+//                 className="w-full border px-3 py-2 rounded"
+//               />
+//               <input
+//                 type="text"
+//                 placeholder="Phone"
+//                 value={formData.phone}
+//                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+//                 className="w-full border px-3 py-2 rounded"
+//               />
+//               {!editMode && (
+//                 <input
+//                   type="password"
+//                   placeholder="Password"
+//                   value={formData.password}
+//                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+//                   required
+//                   className="w-full border px-3 py-2 rounded"
+//                 />
+//               )}
+//               <button
+//                 type="submit"
+//                 className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+//               >
+//                 {editMode ? "Update" : "Add Client"}
+//               </button>
+//             </form>
+//           </div>
+//         </div>
+//       )}
+
+//       {/* Password Modal */}
+//       {showPasswordModal && (
+//         <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex justify-center items-center z-50">
+//           <div className="bg-white p-6 rounded-md shadow-md w-[90%] max-w-md relative">
+//             <button
+//               onClick={() => setShowPasswordModal(false)}
+//               className="absolute top-2 right-2 text-gray-500 hover:text-red-600"
+//             >
+//               <X />
+//             </button>
+//             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+//               <Lock size={18} /> Update Password
+//             </h2>
+//             <input
+//               type="password"
+//               placeholder="New Password"
+//               value={newPassword}
+//               onChange={(e) => setNewPassword(e.target.value)}
+//               className="w-full border px-3 py-2 rounded mb-4"
+//             />
+//             <button
+//               onClick={handlePasswordChange}
+//               className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+//             >
+//               Update Password
+//             </button>
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   );
+// };
+
+// export default ClientSection;
+
+
+
+import React, { useEffect, useState } from "react";
+import {
+  getUsersByRole,
+  getUserById,
+  updateUser,
+  deleteUser,
+  postRegister,
+  changePassword,
+} from "../api/apiRoute";
+import { User, Edit, Trash2, MoreVertical, Plus, X, Lock } from "lucide-react";
+
+const ClientSection = () => {
+  const [clients, setClients] = useState([]);
+  const [showMenu, setShowMenu] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [formData, setFormData] = useState({ name: "", email: "", phone: "", password: "" });
+  const [editId, setEditId] = useState(null);
+  const [passwordUserId, setPasswordUserId] = useState(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [alert, setAlert] = useState(null);
+  const [deleteModal, setDeleteModal] = useState({ open: false, clientId: null });
+
+  const fetchClients = async () => {
+    try {
+      const res = await getUsersByRole("Client");
+      setClients(res.data);
+ 
+      setTimeout(() => setAlert(null), 3000);
+    } catch (err) {
+      setAlert({ type: "error", message: err.response?.data?.msg || "Failed to load clients" });
+      setTimeout(() => setAlert(null), 5000);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteUser(deleteModal.clientId);
+      await fetchClients();
+      setAlert({ type: "success", message: "Client deleted successfully" });
+      setTimeout(() => setAlert(null), 3000);
+    } catch (err) {
+      setAlert({ type: "error", message: err.response?.data?.msg || "Failed to delete client" });
+      setTimeout(() => setAlert(null), 5000);
+    }
+    setDeleteModal({ open: false, clientId: null });
+  };
+
+  const handleEdit = async (id) => {
+    try {
+      const res = await getUserById(id);
+      setFormData({
+        name: res.data.name,
+        email: res.data.email,
+        phone: res.data.phone || "",
+        password: "",
+      });
+      setEditId(id);
+      setEditMode(true);
+      setShowModal(true);
+      setShowMenu(null);
+    } catch (err) {
+      setAlert({ type: "error", message: err.response?.data?.msg || "Failed to fetch client data" });
+      setTimeout(() => setAlert(null), 5000);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (editMode) {
+        await updateUser(editId, formData);
+        setAlert({ type: "success", message: "Client updated successfully" });
+      } else {
+        await postRegister({ ...formData, role: "Client" });
+        setAlert({ type: "success", message: "Client added successfully" });
+      }
+      setShowModal(false);
+      setFormData({ name: "", email: "", phone: "", password: "" });
+      setEditMode(false);
+      setEditId(null);
+      await fetchClients();
+      setTimeout(() => setAlert(null), 3000);
+    } catch (err) {
+      setAlert({ type: "error", message: err.response?.data?.msg || "Operation failed" });
+      setTimeout(() => setAlert(null), 5000);
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    try {
+      await changePassword(passwordUserId, newPassword);
+      setShowPasswordModal(false);
+      setNewPassword("");
+      setPasswordUserId(null);
+      setShowMenu(null);
+      setAlert({ type: "success", message: "Password updated successfully" });
+      setTimeout(() => setAlert(null), 3000);
+    } catch (err) {
+      setAlert({ type: "error", message: err.response?.data?.msg || "Failed to update password" });
+      setTimeout(() => setAlert(null), 5000);
+    }
+  };
+
+  useEffect(() => {
+    fetchClients();
+  }, []);
+
+  return (
+    <div className="p-6">
+      {alert && (
+        <div
+          className={`fixed top-4 right-4 p-4 rounded-lg text-sm font-medium transition-all duration-300 transform z-50 ${
+            alert.type === "success"
+              ? "bg-green-50 text-green-800 border border-green-200"
+              : "bg-red-50 text-red-800 border border-red-200"
+          } animate-slideIn`}
+        >
+          {alert.message}
+        </div>
+      )}
+
+      {deleteModal.open && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Trash2 className="text-red-600" size={20} /> Confirm Deletion
+            </h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to delete this client? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => setDeleteModal({ open: false, clientId: null })}
+                className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition duration-200 flex items-center gap-2"
+              >
+                <X size={18} /> Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 transition duration-200 flex items-center gap-2"
+              >
+                <Trash2 size={18} /> Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="max-w-7xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <h2 className="text-3xl font-extrabold text-gray-900 flex items-center gap-2">
+            <User className="text-indigo-600" size={28} /> All Clients
+          </h2>
+          <button
+            onClick={() => {
+              setFormData({ name: "", email: "", phone: "", password: "" });
+              setEditMode(false);
+              setShowModal(true);
+            }}
+            className="px-4 py-2 text-white bg-gradient-to-r from-indigo-600 to-blue-600 rounded-lg hover:from-indigo-700 hover:to-blue-700 transition duration-200 flex items-center gap-2 shadow-md"
+          >
+            <Plus size={18} /> Add Client
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {clients.map((client) => (
+            <div
+              key={client._id}
+              className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 relative bg-gradient-to-br from-gray-50 to-white"
+            >
+              <div className="absolute top-4 right-4">
+                <div className="relative">
+                  <button
+                    onMouseEnter={() => setShowMenu(client._id)}
+                    onMouseLeave={() => setShowMenu(null)}
+                    className="p-2 text-gray-600 hover:text-indigo-600 transition duration-200"
+                  >
+                    <MoreVertical size={20} />
+                  </button>
+                  {showMenu === client._id && (
+                    <div
+                      className="absolute top-5 border right-0 mt-2 w-48 bg-white rounded-lg shadow-xl z-10"
+                      onMouseEnter={() => setShowMenu(client._id)}
+                      onMouseLeave={() => setShowMenu(null)}
+                    >
+                      <button
+                        onClick={() => handleEdit(client._id)}
+                        className="block w-full px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-2"
+                      >
+                        <Edit size={16} /> Edit
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowMenu(null);
+                          setDeleteModal({ open: true, clientId: client._id });
+                        }}
+                        className="block w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                      >
+                        <Trash2 size={16} /> Delete
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowMenu(null);
+                          setPasswordUserId(client._id);
+                          setShowPasswordModal(true);
+                        }}
+                        className="block w-full px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+                      >
+                        <Lock size={16} /> Update Password
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <User className="text-indigo-600" size={20} /> {client.name}
+              </h3>
+              <p className="text-sm text-gray-600 flex items-center gap-2 mt-2">
+                <span className="text-indigo-500">📧</span> {client.email}
+              </p>
+              <p className="text-sm text-gray-600 flex items-center gap-2 mt-1">
+                <span className="text-indigo-500">📞</span> {client.phone || "N/A"}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* Add/Edit Modal */}
+        {showModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md relative">
+              <button
+                onClick={() => setShowModal(false)}
+                className="absolute top-4 right-4 text-gray-500 hover:text-red-600 transition duration-200"
+              >
+                <X size={20} />
+              </button>
+              <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                {editMode ? (
+                  <>
+                    <Edit className="text-indigo-600" size={20} /> Update Client
+                  </>
+                ) : (
+                  <>
+                    <Plus className="text-indigo-600" size={20} /> Add New Client
+                  </>
+                )}
+              </h2>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                    Name
+                  </label>
+                  <input
+                    id="name"
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
+                    className="mt-1 w-full outline-none px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
+                    placeholder="Enter client name"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                    Email
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    required
+                    className="mt-1 w-full outline-none px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
+                    placeholder="Enter client email"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                    Phone
+                  </label>
+                  <input
+                    id="phone"
+                    type="text"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="mt-1 w-full px-4 py-3 outline-none bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
+                    placeholder="Enter client phone"
+                  />
+                </div>
+                {!editMode && (
+                  <div>
+                    <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                      Password
+                    </label>
+                    <input
+                      id="password"
+                      type="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      required
+                      className="mt-1 w-full px-4 py-3 outline-none bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
+                      placeholder="Enter password"
+                    />
+                  </div>
+                )}
+                <div className="flex justify-end gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition duration-200 flex items-center gap-2"
+                  >
+                    <X size={18} /> Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 text-white bg-gradient-to-r from-indigo-600 to-blue-600 rounded-lg hover:from-indigo-700 hover:to-blue-700 transition duration-200 flex items-center gap-2"
+                  >
+                    {editMode ? <Edit size={18} /> : <Plus size={18} />}
+                    {editMode ? "Update Client" : "Add Client"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Password Modal */}
+        {showPasswordModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md relative">
+              <button
+                onClick={() => setShowPasswordModal(false)}
+                className="absolute top-4 right-4 text-gray-500 hover:text-red-600 transition duration-200"
+              >
+                <X size={20} />
+              </button>
+              <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                <Lock className="text-indigo-600" size={20} /> Update Password
+              </h2>
+              <div>
+                <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
+                  New Password
+                </label>
+                <input
+                  id="newPassword"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                  className="mt-1 w-full outline-none px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
+                  placeholder="Enter new password"
+                />
+              </div>
+              <div className="flex justify-end gap-4 mt-6">
+                <button
+                  onClick={() => setShowPasswordModal(false)}
+                  className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition duration-200 flex items-center gap-2"
+                >
+                  <X size={18} /> Cancel
+                </button>
+                <button
+                  onClick={handlePasswordChange}
+                  className="px-4 py-2 text-white bg-gradient-to-r from-indigo-600 to-blue-600 rounded-lg hover:from-indigo-700 hover:to-blue-700 transition duration-200 flex items-center gap-2"
+                >
+                  <Lock size={18} /> Update Password
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default ClientSection;
